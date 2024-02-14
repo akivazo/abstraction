@@ -10,9 +10,9 @@ class event(ABC):
         if self.intensity < 1:
             raise ValueError("intensity must be graeter than 0 integer")
 
-    @abstractmethod    
-    def __add__(self, other):
-        pass
+        
+    def __add__(self, other: "event"):
+        return event(self.intensity + other.intensity)
 
 @dataclass
 class eof_event:

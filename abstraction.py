@@ -6,12 +6,11 @@ from weakref import WeakSet
 
 class abstraction:
     def __init__(self, event_supplier :Callable[[], event]):
-        self.__nodes: WeakSet[node] = set()
+        self.__nodes: Set[node] = WeakSet()
         self.__event_map: Mapping[event, node] = {}
         self.__live_nodes: Set[node] = WeakSet()
         self.__event_supplier: Callable[[], event] = event_supplier
-        self.__default_node = self.create_node(event(intensity=1))
-        self.__last_node = self.__default_node
+        self.__last_node = None
 
 
     def get_event_intentsity(self, event: event):
@@ -21,6 +20,7 @@ class abstraction:
         new_node = node(intensity=self.get_event_intentsity(event), event=event)
         self.__nodes.add(new_node)
         self.__event_map[event] = new_node
+        self.__last_node = new_node
         return new_node
 
     def start_intensity_count_down(self, node: node):
@@ -87,6 +87,7 @@ class abstraction:
                 self.__live_nodes.remove(node)
         if self.is_all_events_warm_out():
             self.summarize_isolated_branches()
+            self.__last_node = None
 
     def process(self, event: event): 
         new_node: node
