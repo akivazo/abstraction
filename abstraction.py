@@ -8,7 +8,6 @@ class abstraction:
     def __init__(self, event_supplier :Callable[[], event]):
         self.__nodes: Set[node] = WeakSet()
         self.__event_map: Mapping[event, node] = {}
-        self.__live_nodes: Set[node] = WeakSet()
         self.__event_supplier: Callable[[], event] = event_supplier
         self.__last_node = None
 
@@ -21,11 +20,7 @@ class abstraction:
         self.__nodes.add(new_node)
         self.__event_map[event] = new_node
         self.__last_node = new_node
-        self.__live_nodes.add(new_node)
         return new_node
-
-    def start_intensity_count_down(self, node: node):
-        self.__live_nodes.add(node)
 
     def get_last_node_created(self):
         return self.__last_node
@@ -40,9 +35,6 @@ class abstraction:
         new_edge = directed_edge(source=node, target=node_to_connetct_to, strength=connection_strngth)
         node.add_edge(new_edge)
 
-    def is_all_events_warm_out(self):
-        return len(self.__live_nodes) == 0
-
     def is_part_of_branch(self, node: node):
         return node.get_rank() == 1
     
@@ -55,24 +47,21 @@ class abstraction:
 
     def __find_branch(self, node: node):
         branch_node = None
-        old_nodes = set()
         if self.is_part_of_branch(node):
-            old_nodes.add(node)
             branch_node = node
             next_node = node.get_edge(0).next
-            rest_of_branch_node, rest_of_branch_old_nodes = self.__find_branch(next_node)
+            rest_of_branch_node = self.__find_branch(next_node)
             if rest_of_branch_node is not None:
                 branch_node = self.__merge_nodes(node, rest_of_branch_node)
-                old_nodes = old_nodes.union(rest_of_branch_old_nodes)
-        return branch_node, old_nodes
+        return branch_node
     
     def summarize_isolated_branches(self):
-        def aux(branches_parts_nodes):
-            if not branches_parts_nodes:
+        def aux(branches_parts_nodes: list):
+            try:
+                part_of_branch_node = branches_parts_nodes.pop(0)
+            except IndexError:
                 return []
-            part_of_branch_node = branches_parts_nodes[0]
-            branch_node, old_nodes = self.__find_branch(part_of_branch_node)
-            branches_parts_nodes -= old_nodes
+            branch_node = self.__find_branch(part_of_branch_node)
             return [branch_node] + aux(branches_parts_nodes)
 
         branches_parts_nodes = list(filter(self.is_part_of_branch, self.__nodes))
@@ -81,21 +70,11 @@ class abstraction:
         for branch_node in branches_nodes:
             self.process(branch_node.get_event())
 
-    def tik(self):
-        nodes_to_remove = set()
-        for node in self.__live_nodes:
-            node.decrease_instensity()
-            if node.is_dead():
-                nodes_to_remove.add(node)
-        self.__live_nodes.difference_update(nodes_to_remove)
-        if self.is_all_events_warm_out():
-            self.summarize_isolated_branches()
-            self.__last_node = None
-
     def process(self, event: event): 
         new_node: node
         try:
             new_node = self.__event_map[event]
+            new_node.increase_intensity(self.get_event_intentsity(event))
         except KeyError:
             new_node = self.create_node(event)
         last_node = self.get_last_node_created()
@@ -106,18 +85,9 @@ class abstraction:
         while True:
             new_event = self.__event_supplier()
             if isinstance(new_event, eof_event) or new_event is None:
+                self.summarize_isolated_branches()
                 break
             self.process(new_event)
-            self.tik()
-
-    def get_evevnts_abstraction(self, events: List[event]):
-        current_node = self.__default_node
-        while len(events) > 0:
-            event = events.pop(0)
-            current_node = current_node.search_event(event)
-            if current_node is None:
-                return None
-        return current_node.get_strongest_connection().next.get_event()
         
 
 

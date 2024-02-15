@@ -43,6 +43,9 @@ class node:
                 return next_node
         return None
     
+    def increase_intensity(self, intensity):
+        self.__intensity += intensity
+        
     def get_strongest_connection(self):
         return max(self.__edges, key=lambda edge: edge.strength, default=None)
 
