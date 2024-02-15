@@ -21,6 +21,7 @@ class abstraction:
         self.__nodes.add(new_node)
         self.__event_map[event] = new_node
         self.__last_node = new_node
+        self.__live_nodes.add(new_node)
         return new_node
 
     def start_intensity_count_down(self, node: node):
@@ -81,10 +82,12 @@ class abstraction:
             self.process(branch_node.get_event())
 
     def tik(self):
+        nodes_to_remove = set()
         for node in self.__live_nodes:
             node.decrease_instensity()
             if node.is_dead():
-                self.__live_nodes.remove(node)
+                nodes_to_remove.add(node)
+        self.__live_nodes.difference_update(nodes_to_remove)
         if self.is_all_events_warm_out():
             self.summarize_isolated_branches()
             self.__last_node = None
@@ -95,18 +98,17 @@ class abstraction:
             new_node = self.__event_map[event]
         except KeyError:
             new_node = self.create_node(event)
-        self.start_intensity_count_down(new_node)
         last_node = self.get_last_node_created()
-        last_node.connect_to_node(node=new_node, strengrh=self.get_node_intensity(new_node))
+        if last_node is not None:
+            last_node.connect_to_node(node=new_node, strengrh=self.get_node_intensity(new_node))
 
     def learn(self):
         while True:
-            self.tik()
             new_event = self.__event_supplier()
             if isinstance(new_event, eof_event) or new_event is None:
                 break
-
             self.process(new_event)
+            self.tik()
 
     def get_evevnts_abstraction(self, events: List[event]):
         current_node = self.__default_node

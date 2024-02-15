@@ -24,7 +24,7 @@ class node:
         self.__intensity -= 1
 
     def is_alive(self):
-        return self.__intensity == 0
+        return self.__intensity > 0
     
     def is_dead(self):
         return not self.is_alive()
