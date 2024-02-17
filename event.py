@@ -33,24 +33,24 @@ class event_supplier_impl(event_supplier):
     def add_event(self, event: event):
         self.__events_queue.append(event)
 
+    def get_events(self):
+        return self.__events_queue
+
     def __call__(self) -> Any:
         if len(self.__events_queue) > 0:
             event = self.__events_queue.pop(0)
             return event
         return eof_event()
 
-class eof_event(event):
-    _instance = None
-    
+class fake_event(event):
     def __init__(self):
         self.intensity = 0
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(eof_event, cls).__new__(cls)
-            # Put any initialization here.
-        return cls._instance
-    
     def __hash__(self) -> int:
-        return -1
-    
+        raise NotImplementedError()
+
+class end_of_big_event(fake_event):
+    pass
+
+class eof_event(end_of_big_event):
+    pass

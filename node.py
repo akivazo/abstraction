@@ -12,7 +12,13 @@ class node:
         self.__edges: List["directed_edge"] = []
     
     def get_edge(self, n: int):
-        return self.__edges[n]
+        try:
+            return self.__edges[n]
+        except IndexError:
+            return None
+        
+    def get_edges(self):
+        return self.__edges
     
     def get_intensity(self):
         return self.__intensity
@@ -59,10 +65,10 @@ class node:
         return self.get_event().__repr__(), self.get_intensity()
     
     def __add__(self, other: "node"):
-        next_node = other.get_edge(0).next
         new_event = self.get_event() + other.get_event()
         new_node = node(event=new_event)
-        new_node.connect_to_node(next_node)
+        for edge in other.get_edges():
+            new_node.connect_to_node(edge.next)
         return new_node
     
     def __hash__(self):
@@ -73,14 +79,7 @@ class node:
             return self.__hash__() == __value.__hash__()
         return False
 
-class eof_node(node):
-    _instance = None
-    def __new__(cls):
-        if cls._instance is None:
-            print('Creating the object')
-            cls._instance = super(eof_node, cls).__new__(cls)
-            # Put any initialization here.
-        return cls._instance
+class fake_node(node):
     
     def __init__(self) -> None:
         self.__intensity = 0
@@ -97,6 +96,7 @@ class eof_node(node):
     def get_intensity(self):
         return 0
     
+class eof_node(fake_node):
     def get_event(self):
         return eof_event()
     

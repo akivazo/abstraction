@@ -1,5 +1,5 @@
 from ..abstraction import abstraction
-from ..event import event, event_supplier_impl, eof_event
+from ..event import event, event_supplier_impl, end_of_big_event
 from typing import List
 import sys
 
@@ -25,8 +25,10 @@ class char_event_supplier(event_supplier_impl):
 
     def __init__(self, string: str) -> None:
         super().__init__()
-        for c in string:
-            self.add_char(c=c)
+        for w in string.split(" "):
+            for c in w:
+                self.add_char(c=c)
+            self.add_event(end_of_big_event())
 
 
     def add_char(self, c: str):
@@ -41,9 +43,10 @@ import pytest
                             ("", []),
                             ("helo", ['h', 'e', 'l', 'o']),
                             ("helo my ward", ["helo", "my", "ward"]),
-                            ("hello world", [])
+                            ("hello world", ["hello", "world"]),
                         ])
-def test_simple_supplier(input, result):
+
+def test_char_supplier(input, result):
     abstraction_inst = abstraction(char_event_supplier(input))
     abstraction_inst.learn()
     events: List[char_event] = abstraction_inst.show_abstraction()
